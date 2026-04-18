@@ -7,6 +7,10 @@ import Auth from './pages/Auth';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentPortal from './pages/StudentPortal';
 import CompanyManagement from './pages/CompanyManagement';
+import StudentsDirectory from './pages/StudentsDirectory';
+import PlacementReports from './pages/PlacementReports';
+import CompanyPortal from './pages/CompanyPortal';
+import StudentApplications from './pages/StudentApplications';
 
 function App() {
   const [user, setUser] = useState(null); // { role, username, cgpa, avatar, ... }
@@ -32,8 +36,8 @@ function App() {
             index 
             element={
               role === 'TPO' ? <AdminDashboard /> : 
-              role === 'STUDENT' ? <StudentPortal user={user} /> : 
-              <CompanyManagement />
+              role === 'STUDENT' ? <StudentPortal user={user} setUser={setUser} /> : 
+              <CompanyPortal />
             } 
           />
           
@@ -41,13 +45,13 @@ function App() {
           {role === 'TPO' && (
             <>
               <Route path="companies" element={<CompanyManagement />} />
-              <Route path="students" element={<div className="glass-panel"><h2>Students Directory</h2><p>List of all students.</p></div>} />
-              <Route path="reports" element={<div className="glass-panel"><h2>Placement Reports</h2><p>Annual placement analytics.</p></div>} />
+              <Route path="students" element={<StudentsDirectory />} />
+              <Route path="reports" element={<PlacementReports />} />
             </>
           )}
 
           {role === 'STUDENT' && (
-            <Route path="applications" element={<div className="glass-panel"><h2>My Applications</h2><p>Detailed view of your applications.</p></div>} />
+            <Route path="applications" element={<StudentApplications user={user} />} />
           )}
           
           {/* Fallback */}

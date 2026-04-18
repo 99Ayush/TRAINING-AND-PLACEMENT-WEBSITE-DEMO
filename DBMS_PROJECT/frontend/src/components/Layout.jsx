@@ -1,24 +1,42 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, Briefcase, LogOut, Bell, Search, Settings, Menu, X, Edit2 } from 'lucide-react';
-import { showToast } from '../utils';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  LayoutDashboard, Users, Briefcase, LogOut, Bell, Search, 
+  Menu, ChevronLeft, Sun, Moon 
+} from 'lucide-react';
+import { showToast, cn } from '../utils';
 import './Layout.css';
 
 const Layout = ({ user, setUser }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [avatarUrlInput, setAvatarUrlInput] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   
+  const location = useLocation();
   const { role, username, avatar } = user;
+  
+  // Permanent Robo Avatar for Admin (Robohash for high reliability)
+  const adminRoboAvatar = 'https://robohash.org/admin-office?set=set1&bgset=bg1'; 
+  const displayAvatar = role === 'TPO' ? adminRoboAvatar : (avatar || `https://ui-avatars.com/api/?name=${username}&background=random`);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    showToast(`Switched to ${theme === 'light' ? 'Dark' : 'Light'} mode`);
+  };
 
   const handleLogout = () => {
     setUser(null);
     showToast('Logged out securely');
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   const handleNavClick = () => {
     if (window.innerWidth <= 768) {
@@ -26,29 +44,25 @@ const Layout = ({ user, setUser }) => {
     }
   };
 
-  const attemptAvatarUpdate = () => {
-    if (avatarUrlInput.trim().length > 5) {
-      const updatedUser = { ...user, avatar: avatarUrlInput };
-      setUser(updatedUser);
-      setProfileOpen(false);
-      showToast('Avatar updated successfully!', 'success');
-      
-      // Update local storage explicitly
-      const saved = JSON.parse(localStorage.getItem('campusSyncUsers'));
-      const idx = saved.findIndex(u => u.email === updatedUser.email);
-      if(idx > -1) {
-        saved[idx] = updatedUser;
-        localStorage.setItem('campusSyncUsers', JSON.stringify(saved));
-      }
-    }
-  };
-
   return (
     <div className="layout-container">
-      {/* Mobile overlay */}
-      {isSidebarOpen && <div className="mobile-overlay" onClick={toggleSidebar}></div>}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="mobile-overlay" 
+            onClick={toggleSidebar}
+          />
+        )}
+      </AnimatePresence>
 
-      <aside className={`sidebar glass-panel ${isSidebarOpen ? 'open' : ''}`}>
+      <aside className={cn(
+        "sidebar glass-panel",
+        isSidebarOpen && "open",
+        isCollapsed && "collapsed"
+      )}>
         <div className="sidebar-header">
           <div className="brand">
             <div className="brand-logo university-seal">🎓</div>
@@ -61,56 +75,53 @@ const Layout = ({ user, setUser }) => {
         
         <nav className="sidebar-nav">
           <div className="nav-section">
-            <p className="nav-label">MAIN</p>
-            <NavLink to="/" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} end onClick={handleNavClick}>
+            <p className="nav-label">MAIN MENU</p>
+            <NavLink to="/" className={({ isActive }) => cn("nav-link", isActive && "active")} end onClick={handleNavClick}>
               <LayoutDashboard size={20} />
               <span>Dashboard</span>
             </NavLink>
             
             {role === 'TPO' && (
               <>
-                <NavLink to="/students" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={handleNavClick}>
+                <NavLink to="/students" className={({ isActive }) => cn("nav-link", isActive && "active")} onClick={handleNavClick}>
                   <Users size={20} />
-                  <span>Students Directory</span>
+                  <span>Students</span>
                 </NavLink>
-                <NavLink to="/companies" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={handleNavClick}>
+                <NavLink to="/companies" className={({ isActive }) => cn("nav-link", isActive && "active")} onClick={handleNavClick}>
                   <Briefcase size={20} />
-                  <span>Partner Companies</span>
+                  <span>Companies</span>
                 </NavLink>
-                <NavLink to="/reports" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={handleNavClick}>
+                <NavLink to="/reports" className={({ isActive }) => cn("nav-link", isActive && "active")} onClick={handleNavClick}>
                   <LayoutDashboard size={20} />
-                  <span>Placement Reports</span>
+                  <span>Reports</span>
                 </NavLink>
               </>
             )}
             
             {role === 'STUDENT' && (
-              <>
-                <NavLink to="/applications" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} onClick={handleNavClick}>
-                  <Briefcase size={20} />
-                  <span>My Applications</span>
-                </NavLink>
-              </>
+              <NavLink to="/applications" className={({ isActive }) => cn("nav-link", isActive && "active")} onClick={handleNavClick}>
+                <Briefcase size={20} />
+                <span>Applications</span>
+              </NavLink>
             )}
           </div>
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-user-mini" onClick={() => setProfileOpen(true)} style={{cursor: 'pointer'}}>
+          <div className="sidebar-user-mini">
             <img 
-              src={avatar || (role === 'TPO' ? "https://i.pravatar.cc/150?img=11" : role === 'STUDENT' ? "https://i.pravatar.cc/150?img=12" : "https://i.pravatar.cc/150?img=33")} 
-              alt="User Avatar" 
+              src={displayAvatar} 
+              alt="Avatar" 
               className="mini-avatar"
             />
             <div className="mini-user-info">
-              <h4>{username.split('@')[0] || 'User'}</h4>
-              <p>Online</p>
+              <h4>{username.split('@')[0]}</h4>
+              <p>Active Now</p>
             </div>
-            <Edit2 size={12} color="var(--text-muted)" style={{marginLeft: 'auto'}} />
           </div>
           <button onClick={handleLogout} className="logout-btn">
             <LogOut size={20} />
-            <span>Logout</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
@@ -119,52 +130,59 @@ const Layout = ({ user, setUser }) => {
         <header className="topbar glass-header">
           <div className="topbar-left">
             <button className="mobile-menu-btn" onClick={toggleSidebar}>
-              <Menu size={24} color="var(--primary-navy)" />
+              <Menu size={24} />
             </button>
-            <h1>Department of Training & Placement</h1>
+            <button className="collapse-btn" onClick={toggleCollapse}>
+              <ChevronLeft size={20} style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }} />
+            </button>
+            <motion.h1
+              key={location.pathname}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              {location.pathname === '/' ? 'Overview' : 
+               location.pathname.split('/')[1].charAt(0).toUpperCase() + location.pathname.split('/')[1].slice(1)}
+            </motion.h1>
           </div>
           
           <div className="topbar-right">
             <div className="global-search">
-              <Search size={18} color="var(--text-muted)" />
-              <input type="text" placeholder="Search anything..." />
+              <Search size={18} />
+              <input type="text" placeholder="Search for students, companies..." />
             </div>
 
-            <div className="user-profile" onClick={() => setProfileOpen(true)} style={{cursor: 'pointer'}}>
+            <button className="theme-toggle" onClick={toggleTheme}>
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+
+            <button className="icon-btn">
+              <Bell size={20} />
+            </button>
+
+            <div className="user-profile">
               <img 
-                src={avatar || (role === 'TPO' ? "https://i.pravatar.cc/150?img=11" : role === 'STUDENT' ? "https://i.pravatar.cc/150?img=12" : "https://i.pravatar.cc/150?img=33")} 
+                src={displayAvatar} 
                 alt="Profile" 
-                className="topbar-avatar"
+                className={cn("topbar-avatar", "no-click")}
               />
             </div>
           </div>
         </header>
 
-        {profileOpen && (
-          <div className="avatar-modal-overlay">
-            <div className="avatar-modal glass-panel">
-               <div style={{display:'flex', justifyContent: 'space-between'}}>
-                 <h3>Update Profile Picture</h3>
-                 <button className="icon-btn" onClick={()=>setProfileOpen(false)}><X size={16}/></button>
-               </div>
-               <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px'}}>Provide a URL to an image file.</p>
-               <input 
-                 type="url" 
-                 placeholder="https://example.com/my-photo.jpg" 
-                 value={avatarUrlInput} 
-                 onChange={(e) => setAvatarUrlInput(e.target.value)}
-                 style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #E5E7EB', marginBottom: '16px'}}
-               />
-               <button className="btn-primary" onClick={attemptAvatarUpdate} style={{width: '100%'}}>Save Custom Avatar</button>
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={location.pathname}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="page-content"
+          >
+            <div className="page-content-inner">
+              <Outlet />
             </div>
-          </div>
-        )}
-
-        <div className="page-content">
-          <div className="page-content-inner">
-            <Outlet />
-          </div>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

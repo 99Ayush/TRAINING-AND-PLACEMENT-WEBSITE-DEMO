@@ -12,7 +12,20 @@ Framework: [Specify your preference, e.g., React with Tailwind CSS and Shadcn/UI
 
 Core Dashboard Views to Design:
 
-Admin/TPO Dashboard: A high-level overview featuring KPI cards: "Total Students Placed," "Ongoing Drives," and "Average Package." Include a "Recent Placements" table and a "Placement Trends" bar chart.
+Admin/TPO Dashboard: A high-leve"
+
+
+
+
+
+
+
+
+
+
+
+
+el overview featuring KPI cards: "Total Students Placed," "Ongoing Drives," and "Average Package." Include a "Recent Placements" table and a "Placement Trends" bar chart.
 
 Student Portal: A personalized view for students to track their application status (Applied, Interviewing, Offered), upload resumes, and view upcoming company visits in a "Timeline" or "Calendar" view.
 

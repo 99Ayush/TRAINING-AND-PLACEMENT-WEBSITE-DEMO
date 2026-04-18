@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, Building, GraduationCap, ChevronRight, User, AlertCircle, Briefcase, MapPin } from 'lucide-react';
-import { showToast } from '../utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mail, Lock, Building, GraduationCap, ChevronRight, 
+  User, AlertCircle, Briefcase, ShieldCheck 
+} from 'lucide-react';
+import { showToast, cn } from '../utils';
 import './Auth.css';
 
 const defaultUsers = [
@@ -13,8 +17,6 @@ const defaultUsers = [
 const Auth = ({ setUser }) => {
   const [mode, setMode] = useState('LOGIN'); // 'LOGIN' | 'SIGNUP'
   const [selectedRole, setSelectedRole] = useState('STUDENT');
-  
-  // Generic Credentials
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -29,14 +31,7 @@ const Auth = ({ setUser }) => {
 
   const [usersDb, setUsersDb] = useState(() => {
     const saved = localStorage.getItem('campusSyncUsers');
-    if (saved) {
-      let parsed = JSON.parse(saved);
-      // Force inject ayush if missing so testing works immediately
-      if (!parsed.find(u => u.email === 'ayush@uni.edu')) {
-        parsed.push({ email: 'ayush@uni.edu', pass: 'ayush123', role: 'TPO', username: 'ayush' });
-      }
-      return parsed;
-    }
+    if (saved) return JSON.parse(saved);
     return defaultUsers;
   });
 
@@ -51,32 +46,29 @@ const Auth = ({ setUser }) => {
     if (mode === 'LOGIN') {
       const user = usersDb.find(u => u.email === email && u.pass === password && u.role === selectedRole);
       if (user) {
-        showToast('Successfully logged in!');
-        setUser(user); // Auto log in with full object (cgpa, apps, etc)
+        showToast('Success! Redirecting to dashboard...');
+        setUser(user);
       } else {
-        setErrorMsg('Account does not exist or incorrect password/role.');
+        setErrorMsg('Invalid credentials or role selection.');
       }
     } else {
-      // SIGNUP MODE
       const userExists = usersDb.find(u => u.email === email);
       if (userExists) {
-        setErrorMsg('Email is already registered. Please log in.');
+        setErrorMsg('This email is already registered.');
         return;
       }
 
-      // In a real app we would push this to a database
       const newUser = { 
         email, 
         pass: password, 
         role: selectedRole, 
-        username: email,
+        username: selectedRole === 'COMPANY' ? companyName : `${firstName} ${lastName}`.trim() || email,
         cgpa: cgpa || undefined,
         dept: department || undefined,
-        applications: [] // Empty applications array mapped to Hackathon fix
+        applications: []
       };
-      setUsersDb([...usersDb, newUser]); // updating the mock DB
-      
-      showToast('Registration successful!', 'success');
+      setUsersDb([...usersDb, newUser]);
+      showToast('Account created successfully!', 'success');
       setUser(newUser);
     }
   };
@@ -91,145 +83,206 @@ const Auth = ({ setUser }) => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
-        
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="auth-card glass-panel"
+      >
         <div className="auth-brand-center">
-          <div className="brand-logo-large">🎓</div>
-          <h2>Placement Cell</h2>
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="brand-logo-large"
+          >
+            🎓
+          </motion.div>
+          <h2>CampusSync</h2>
         </div>
 
         <div className="mode-toggle">
-          <button type="button" className={mode === 'LOGIN' ? 'active' : ''} onClick={() => switchMode('LOGIN')}>Log In</button>
-          <button type="button" className={mode === 'SIGNUP' ? 'active' : ''} onClick={() => switchMode('SIGNUP')}>Sign Up</button>
+          <button 
+            type="button" 
+            className={cn(mode === 'LOGIN' && 'active')} 
+            onClick={() => switchMode('LOGIN')}
+          >
+            Sign In
+          </button>
+          <button 
+            type="button" 
+            className={cn(mode === 'SIGNUP' && 'active')} 
+            onClick={() => switchMode('SIGNUP')}
+          >
+            Register
+          </button>
         </div>
 
         <div className="auth-header">
-          <h3>{mode === 'LOGIN' ? 'Welcome Back' : 'Create an Account'}</h3>
-          <p>{mode === 'LOGIN' ? 'Sign in to the university portal' : 'Register for placement & hiring access'}</p>
+          <motion.h3
+            key={mode}
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {mode === 'LOGIN' ? 'Welcome Back' : 'Get Started'}
+          </motion.h3>
+          <p>{mode === 'LOGIN' ? 'Access your placement journey' : 'Join the university recruitment network'}</p>
         </div>
 
-        {errorMsg && (
-          <div className="error-banner">
-            <AlertCircle size={18} />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {errorMsg && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="error-banner"
+            >
+              <AlertCircle size={18} />
+              <span>{errorMsg}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="role-toggle">
-          <button type="button" className={`toggle-btn ${selectedRole === 'STUDENT' ? 'active' : ''}`} onClick={() => setSelectedRole('STUDENT')}>
-            <GraduationCap size={16}/> Student
+          <button 
+            type="button" 
+            className={cn("toggle-btn", selectedRole === 'STUDENT' && "active")} 
+            onClick={() => setSelectedRole('STUDENT')}
+          >
+            <GraduationCap size={20}/>
+            <span>Student</span>
           </button>
           
-          {mode === 'LOGIN' && (
-            <button type="button" className={`toggle-btn ${selectedRole === 'TPO' ? 'active' : ''}`} onClick={() => setSelectedRole('TPO')}>
-              <Lock size={16}/> Admin
+          {mode === 'LOGIN' ? (
+            <button 
+              type="button" 
+              className={cn("toggle-btn", selectedRole === 'TPO' && "active")} 
+              onClick={() => setSelectedRole('TPO')}
+            >
+              <ShieldCheck size={20}/>
+              <span>Admin</span>
             </button>
-          )}
+          ) : null}
 
-          <button type="button" className={`toggle-btn ${selectedRole === 'COMPANY' ? 'active' : ''}`} onClick={() => setSelectedRole('COMPANY')}>
-            <Building size={16}/> Company
+          <button 
+            type="button" 
+            className={cn("toggle-btn", selectedRole === 'COMPANY' && "active")} 
+            onClick={() => setSelectedRole('COMPANY')}
+          >
+            <Building size={20}/>
+            <span>Company</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label>Email Address</label>
+            <label>Work Email</label>
             <div className="input-with-icon">
-              <Mail size={18} color="var(--text-muted)" />
-              <input type="email" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Mail size={18} />
+              <input 
+                type="email" 
+                placeholder="you@university.edu" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+              />
             </div>
           </div>
           
           <div className="form-group">
-            <div className="label-row">
-              <label>Password</label>
-            </div>
+            <label>Password</label>
             <div className="input-with-icon">
-              <Lock size={18} color="var(--text-muted)" />
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength="4" />
+              <Lock size={18} />
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                minLength="4" 
+              />
             </div>
           </div>
 
-          {/* DYNAMIC SIGNUP FIELDS */}
-          {mode === 'SIGNUP' && (
-            <div className="signup-extra-fields">
-              <hr className="divider" />
-              <p className="section-label">Additional {selectedRole} Details</p>
+          <AnimatePresence mode="wait">
+            {mode === 'SIGNUP' && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="signup-extra-fields"
+              >
+                <hr className="divider" />
+                
+                {selectedRole === 'STUDENT' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="split-group">
+                      <div className="form-group">
+                        <label>First Name</label>
+                        <div className="input-with-icon">
+                          <User size={18} />
+                          <input type="text" placeholder="John" value={firstName} onChange={(e)=>setFirstName(e.target.value)} required />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Last Name</label>
+                        <div className="input-with-icon">
+                          <User size={18} />
+                          <input type="text" placeholder="Doe" value={lastName} onChange={(e)=>setLastName(e.target.value)} required/>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="split-group">
+                      <div className="form-group">
+                        <label>Department</label>
+                        <div className="input-with-icon">
+                          <Briefcase size={18} />
+                          <input type="text" placeholder="CSE / IT / ECE" value={department} onChange={(e)=>setDepartment(e.target.value)} required/>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>CGPA</label>
+                        <div className="input-with-icon">
+                          <GraduationCap size={18} />
+                          <input type="number" step="0.01" max="10" placeholder="0.00" value={cgpa} onChange={(e)=>setCgpa(e.target.value)} required/>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-              {selectedRole === 'STUDENT' && (
-                <>
-                  <div className="split-group">
+                {selectedRole === 'COMPANY' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div className="form-group">
-                      <label>First Name</label>
+                      <label>Company Display Name</label>
                       <div className="input-with-icon">
-                        <User size={18} color="var(--text-muted)" />
-                        <input type="text" placeholder="John" value={firstName} onChange={(e)=>setFirstName(e.target.value)} required />
+                        <Building size={18} />
+                        <input type="text" placeholder="Google / Microsoft" value={companyName} onChange={(e)=>setCompanyName(e.target.value)} required/>
                       </div>
                     </div>
                     <div className="form-group">
-                      <label>Last Name</label>
+                      <label>Industry Vertical</label>
                       <div className="input-with-icon">
-                        <User size={18} color="var(--text-muted)" />
-                        <input type="text" placeholder="Doe" value={lastName} onChange={(e)=>setLastName(e.target.value)} required/>
+                        <Briefcase size={18} />
+                        <input type="text" placeholder="High-Tech / FinTech" value={industry} onChange={(e)=>setIndustry(e.target.value)} required/>
                       </div>
                     </div>
                   </div>
-                  <div className="split-group">
-                    <div className="form-group">
-                      <label>Department</label>
-                      <div className="input-with-icon">
-                        <Building size={18} color="var(--text-muted)" />
-                        <input type="text" placeholder="Computer Science" value={department} onChange={(e)=>setDepartment(e.target.value)} required/>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>CGPA</label>
-                      <div className="input-with-icon">
-                        <GraduationCap size={18} color="var(--text-muted)" />
-                        <input type="number" step="0.01" max="10" placeholder="8.50" value={cgpa} onChange={(e)=>setCgpa(e.target.value)} required/>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              {selectedRole === 'COMPANY' && (
-                <>
-                  <div className="form-group">
-                    <label>Company Name</label>
-                    <div className="input-with-icon">
-                      <Building size={18} color="var(--text-muted)" />
-                      <input type="text" placeholder="Tech Corp Inc." value={companyName} onChange={(e)=>setCompanyName(e.target.value)} required/>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Industry</label>
-                    <div className="input-with-icon">
-                      <Briefcase size={18} color="var(--text-muted)" />
-                      <input type="text" placeholder="Software Engineering" value={industry} onChange={(e)=>setIndustry(e.target.value)} required/>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {selectedRole === 'TPO' && mode !== 'SIGNUP' && (
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <div className="input-with-icon">
-                    <User size={18} color="var(--text-muted)" />
-                    <input type="text" placeholder="Admin Username" required/>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button type="submit" className="btn-primary login-btn">
-            <span>{mode === 'LOGIN' ? 'Sign In Securely' : 'Complete Registration'}</span>
-            <ChevronRight size={18} />
-          </button>
+          <motion.button 
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit" 
+            className="btn-primary login-btn"
+          >
+            <span>{mode === 'LOGIN' ? 'Sign In' : 'Create Account'}</span>
+            <ChevronRight size={20} />
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -1,10 +1,4 @@
--- ==============================================================================
--- PROJECT: Training & Placement Department Management System
--- PURPOSE: Data Manipulation Language (DML) Demonstration File
--- EXPLANATION: This file contains sample INSERT, UPDATE, DELETE, and SELECT 
---              statements mapping directly to the frontend React dashboards.
---              Use this file to demonstrate your database logic to your examiner.
--- ==============================================================================
+
 
 -- ---------------------------------------------------------
 -- 1. INSERT (Create Operations)
